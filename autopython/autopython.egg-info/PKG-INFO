@@ -1,0 +1,113 @@
+Metadata-Version: 2.2
+Name: autopython
+Version: 0.1.0
+Summary: 自动导入和安装Python模块的工具
+Home-page: https://github.com/lishuyu/autopython
+Author: lishuyu
+Author-email: example@example.com
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: requires-python
+Dynamic: summary
+
+# autopython
+
+自动导入和安装Python模块的工具
+
+## 功能
+
+- 自动检测Python脚本中导入的模块
+- 自动安装缺少的依赖包
+- 处理 `if __name__ == "__main__"` 的情况
+- 支持命令行参数传递
+- 安装失败时搜索相关包并提供安装建议
+
+## 安装
+
+```bash
+pip install autopython
+```
+
+或者从源码安装：
+
+```bash
+git clone https://github.com/lishuyu/autopython.git
+cd autopython
+pip install -e .
+```
+
+## 使用方法
+
+```bash
+autopython your_script.py [arg1 arg2 ...]
+```
+
+### 示例
+
+假设你有一个名为 `example.py` 的脚本，它使用了numpy和matplotlib：
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+data = np.random.rand(100)
+plt.plot(data)
+plt.title('Random Data')
+plt.show()
+```
+
+如果你的系统没有安装numpy或matplotlib，使用autopython会自动安装它们：
+
+```bash
+autopython example.py
+```
+
+输出：
+
+```
+正在安装缺失的依赖包: numpy
+正在安装缺失的依赖包: matplotlib
+[图表显示]
+```
+
+如果安装失败，autopython会搜索相关包并提供安装建议：
+
+```
+正在安装缺失的依赖包: some-package
+安装包 some-package 失败！
+
+正在搜索与 some-package 相关的包...
+找到以下相关包，您可以尝试手动安装：
+  - some-package-lib (版本: 1.2.3) - 实用的Python包
+  - another-package
+
+安装命令: python -m pip install some-package
+
+是否继续执行代码?(y/n): 
+```
+
+### 支持的功能
+
+- 自动解析和安装普通导入语句 `import X`
+- 自动解析和安装from导入语句 `from X import Y`
+- 处理包与模块名不一致的情况 (如 `PIL` -> `pillow`)
+- 支持 `if __name__ == "__main__"` 结构
+- 传递命令行参数到目标脚本
+- 安装失败时搜索相关包并提供安装建议
+
+## 贡献
+
+欢迎通过Issue或Pull Request提供反馈和建议。
+
+## 许可证
+
+MIT 
