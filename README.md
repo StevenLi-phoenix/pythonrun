@@ -14,6 +14,7 @@
 - 支持递归检测导入
 - 支持命令行参数传递
 - 自动纠正部分包名（如将 `PIL` 纠正为 `Pillow`, `torch` 纠正为 `torch torchvision torchaudio`-这三个包需要一起安装，根据官网安装提示）
+- 自动读取requirements.txt
 
 ## 安装
 
@@ -42,6 +43,7 @@ pythonrun your_script.py [arg1 arg2 ...]
 你可以通过配置文件自定义pythonrun的行为，默认配置文件为 `~/.config/pythonrun/config.json`：
 - `auto_install`: 自动安装所有缺失的依赖，无需确认
 - `auto_update_pip`: 在安装依赖前自动更新pip
+- `auto_read_requirements`: 自动读取requirements.txt
 
 ### 示例
 
@@ -118,7 +120,7 @@ pip install -e ".[dev]"
 ### 运行测试
 
 ```bash
-pytest
+pytest tests/test_entry.py
 ```
 
 ## 最近更新
