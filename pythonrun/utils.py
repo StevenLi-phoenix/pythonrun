@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import json
 import time
+import re
 
 # 配置日志
 logging.basicConfig(
@@ -32,14 +33,21 @@ DEFAULT_CONFIG = {
     'auto_update_pip': False, # 是否自动更新pip
 }
 
-if os.path.exists(os.path.join(CURRENT_FILE_DIRECTORY, 'stdlib_modules.json')):
-    STDLIB_MODULES = json.load(open(os.path.join(CURRENT_FILE_DIRECTORY, 'stdlib_modules.json'), 'r', encoding='utf-8'))
-else:
-    STDLIB_MODULES = {}
-if os.path.exists(os.path.join(CURRENT_FILE_DIRECTORY, 'package_mapping.json')):
-    PACKAGE_MAPPING = json.load(open(os.path.join(CURRENT_FILE_DIRECTORY, 'package_mapping.json'), 'r', encoding='utf-8'))
-else:
-    PACKAGE_MAPPING = {}
+# 安全加载JSON文件
+def safe_load_json(file_path: str, default_value: Any = None) -> Any:
+    """安全加载JSON文件，如果文件不存在或格式错误则返回默认值"""
+    if not os.path.exists(file_path):
+        return default_value
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except (json.JSONDecodeError, PermissionError, FileNotFoundError) as e:
+        logger.error(f"无法加载JSON文件 {file_path}: {e}")
+        return default_value
+
+# 加载标准库模块和包映射
+STDLIB_MODULES = safe_load_json(os.path.join(CURRENT_FILE_DIRECTORY, 'stdlib_modules.json'), {})
+PACKAGE_MAPPING = safe_load_json(os.path.join(CURRENT_FILE_DIRECTORY, 'package_mapping.json'), {})
 
 
 def first_run_setup() -> Dict[str, Any]:
@@ -70,51 +78,104 @@ def load_config() -> Dict[str, Any]:
     """加载配置文件"""
     if not os.path.exists(CONFIG_FILE):
         return DEFAULT_CONFIG.copy()
-    with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-        return json.load(f)
+    try:
+        with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except (json.JSONDecodeError, PermissionError, FileNotFoundError) as e:
+        logger.error(f"无法加载配置文件: {e}")
+        return DEFAULT_CONFIG.copy()
 
 def save_config(config: Dict[str, Any]) -> None:
     """保存配置到文件"""
-    os.makedirs(CONFIG_DIR, exist_ok=True)
-    with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-        json.dump(config, f, indent=4)
+    try:
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=4)
+    except (PermissionError, FileNotFoundError) as e:
+        logger.error(f"无法保存配置文件: {e}")
 
-def search_package(package_name: str, max_depth: int = 1) -> List[Dict]:
+def search_package(package_name: str, max_depth: int = 1) -> Optional[Dict]:
     """Get PyPI package information"""
     logger.info(f"Searching for package {package_name}")
+    
+    # 验证包名是否合法
+    if not re.match(r'^[a-zA-Z0-9_\-\.]+$', package_name):
+        logger.warning(f"包名 {package_name} 包含非法字符")
+        return None
+        
     try:
-        if max_depth == 0:
-            raise ValueError(f"Recursion max_depth reached while searching for package {package_name}")
+        if max_depth <= 0:
+            logger.warning(f"Recursion max_depth reached while searching for package {package_name}")
+            return None
+            
         # 尝试导入requests，如果没有安装则跳过搜索
-        import requests
-        response = requests.get(f"https://pypi.org/pypi/{package_name}/json")
-        return response.json()
-    except ImportError:
-        install_package('requests')
-        search_package(package_name, max_depth - 1)
-    except ValueError as e:
-        raise e
+        try:
+            import requests
+            # 设置超时，避免长时间等待
+            response = requests.get(f"https://pypi.org/pypi/{package_name}/json", timeout=10)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                logger.warning(f"PyPI返回非200状态码: {response.status_code}")
+                return None
+        except ImportError:
+            # 安装requests后重试，但减少递归深度
+            install_package('requests')
+            return search_package(package_name, max_depth - 1)
+        except requests.exceptions.RequestException as e:
+            logger.error(f"请求PyPI时出错: {e}")
+            return None
+    except Exception as e:
+        logger.error(f"搜索包 {package_name} 时出错: {e}")
+        return None
 
 def install_package(package_name: str) -> bool:
+    """安装Python包"""
     logger.info(f"Installing package {package_name}")
-    if not package_name:
-        raise ValueError("No package name provided")
+    
+    # 验证包名
+    if not package_name or not isinstance(package_name, str):
+        logger.error("No package name provided or invalid package name")
+        return False
+        
+    # 验证包名是否合法
+    if not re.match(r'^[a-zA-Z0-9_\-\.]+$', package_name):
+        logger.warning(f"包名 {package_name} 包含非法字符")
+        return False
+        
+    # 检查包映射
     if package_name in PACKAGE_MAPPING:
-        logging.info(f"将 {package_name} 映射为 {PACKAGE_MAPPING[package_name]}")
-        package_name = PACKAGE_MAPPING[package_name]
-        if package_name is None:
+        mapped_package = PACKAGE_MAPPING[package_name]
+        logging.info(f"将 {package_name} 映射为 {mapped_package}")
+        if mapped_package is None:
             logger.warning(f"Package {package_name} is mapped to None in package_mapping.json")
             return False
+        package_name = mapped_package
+        
+    # 检查是否为标准库模块
     if package_name in STDLIB_MODULES:
-        raise ValueError(f"Package {package_name} is a standard library module and cannot be installed")
+        logger.info(f"Package {package_name} is a standard library module and cannot be installed")
+        return True  # 返回True因为标准库已经可用
+        
     try:
-        output = subprocess.run([sys.executable, '-m', 'pip', 'install', package_name])
-        if output.returncode != 0:
-            raise subprocess.CalledProcessError(output.returncode, output.args)
+        # 使用subprocess安装包，设置超时
+        process = subprocess.run(
+            [sys.executable, '-m', 'pip', 'install', package_name],
+            timeout=300,  # 5分钟超时
+            check=False
+        )
+        
+        if process.returncode != 0:
+            logger.error(f"安装 {package_name} 失败，返回码: {process.returncode}")
+            # 尝试搜索包信息，但不递归调用install_package
+            search_package(package_name)
+            return False
         return True
-    except subprocess.CalledProcessError:
-        logger.error(f"安装 {package_name} 失败")
-        search_package(package_name)
+    except subprocess.TimeoutExpired:
+        logger.error(f"安装 {package_name} 超时")
+        return False
+    except Exception as e:
+        logger.error(f"安装 {package_name} 时出错: {e}")
         return False
     
     
@@ -123,28 +184,54 @@ def update_stdlib_modules(expire_time_day=30) -> None:
     更新标准库模块
     expire_time_day: 更新时间，单位为天，默认30天
     """
-    if os.path.exists(os.path.join(CURRENT_FILE_DIRECTORY, 'stdlib_modules.json')):
-        last_update_time = os.path.getmtime(os.path.join(CURRENT_FILE_DIRECTORY, 'stdlib_modules.json'))
-        if time.time() - last_update_time < expire_time_day * 24 * 60 * 60:
-            logger.debug(f"标准库模块已在{expire_time_day}天内更新")
-            return
-    logger.debug("Updating standard library modules (from https://docs.python.org/3/py-modindex.html)")
     try:
-        import requests
-        response = requests.get('https://docs.python.org/3/py-modindex.html')
-        html_content = response.text
-        import re
-        module_links = re.findall(r'<code class="xref">([^<]+)</code>', html_content)
-        for module_link in module_links:
-            module_name = module_link.split('.')[0]
-            STDLIB_MODULES[module_name] = module_link
-        with open(os.path.join(CURRENT_FILE_DIRECTORY, 'stdlib_modules.json'), 'w', encoding='utf-8') as f:
-            json.dump(STDLIB_MODULES, f, indent=4)
-    except ImportError:
-        install_package('requests')
-        update_stdlib_modules()
+        stdlib_file = os.path.join(CURRENT_FILE_DIRECTORY, 'stdlib_modules.json')
+        if os.path.exists(stdlib_file):
+            last_update_time = os.path.getmtime(stdlib_file)
+            if time.time() - last_update_time < expire_time_day * 24 * 60 * 60:
+                logger.debug(f"标准库模块已在{expire_time_day}天内更新")
+                return
+                
+        logger.debug("Updating standard library modules (from https://docs.python.org/3/py-modindex.html)")
+        
+        try:
+            import requests
+            # 设置超时，避免长时间等待
+            response = requests.get('https://docs.python.org/3/py-modindex.html', timeout=10)
+            if response.status_code != 200:
+                logger.warning(f"获取标准库模块列表失败，状态码: {response.status_code}")
+                return
+                
+            html_content = response.text
+            module_links = re.findall(r'<code class="xref">([^<]+)</code>', html_content)
+            
+            # 更新标准库模块字典
+            updated_modules = {}
+            for module_link in module_links:
+                module_name = module_link.split('.')[0]
+                updated_modules[module_name] = module_link
+                
+            # 安全写入文件
+            try:
+                with open(stdlib_file, 'w', encoding='utf-8') as f:
+                    json.dump(updated_modules, f, indent=4)
+                # 更新全局变量
+                global STDLIB_MODULES
+                STDLIB_MODULES = updated_modules
+            except (PermissionError, FileNotFoundError) as e:
+                logger.error(f"无法写入标准库模块文件: {e}")
+                
+        except ImportError:
+            # 如果没有requests，尝试安装它
+            if install_package('requests'):
+                # 安装成功后重试，但不递归调用
+                logger.info("已安装requests，请稍后再次尝试更新标准库模块")
+            else:
+                logger.error("无法安装requests，无法更新标准库模块")
+        except requests.exceptions.RequestException as e:
+            logger.error(f"请求Python文档时出错: {e}")
     except Exception as e:
-        logger.error(f"Failed to update standard library modules: {e}")
+        logger.error(f"更新标准库模块时出错: {e}")
         
         
 if __name__ == "__main__":
