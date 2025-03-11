@@ -4,15 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pythonrun"
-# 同时保留固定版本号和dynamic配置，固定版本号用于PyPI上传
-version = "1.1.1"
+version = "1.1.2"  # 固定版本号，用于PyPI上传，同时更改setup.py中的版本号
 # dynamic = ["version"]  # 本地开发时使用
 description = "自动导入和安装Python模块的工具"
 readme = "README.md"
-requires-python = ">=3.6"
+requires-python = ">=3.13" # 很抱歉，但是importlib.util.find_spec() 在python3.13中才支持, 不然太耗性能了
 license = {text = "MIT"}
 authors = [
-    {name = "StevenLi-phoenix", email = "example@example.com"}
+    {name = "StevenLi-phoenix", email = abroad.whinny.3u@icloud.com"}
 ]
 classifiers = [
     "Programming Language :: Python :: 3.13",
@@ -36,15 +35,13 @@ dependencies = [
 [project.scripts]
 pythonrun = "pythonrun.main:main"
 
-# 恢复setuptools_scm配置，用于本地开发
 [tool.setuptools_scm]
 write_to = "pythonrun/_version.py"
-# 禁用本地版本标识符，避免PyPI拒绝上传
 local_scheme = "no-local-version"
 
 [tool.black]
 line-length = 88
-target-version = ['py36', 'py37', 'py38', 'py39', 'py310']
+target-version = ['py313']
 
 [tool.isort]
 profile = "black"
