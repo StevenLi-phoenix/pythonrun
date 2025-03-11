@@ -5,8 +5,8 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pythonrun"
 # 同时保留固定版本号和dynamic配置，固定版本号用于PyPI上传
-# version = "1.0.1"
-dynamic = ["version"]  # 本地开发时使用
+version = "1.1.0"
+# dynamic = ["version"]  # 本地开发时使用
 description = "自动导入和安装Python模块的工具"
 readme = "README.md"
 requires-python = ">=3.6"
