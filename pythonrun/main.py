@@ -10,7 +10,7 @@ import ast
 import importlib
 import subprocess
 import logging
-from typing import List
+from typing import List, Dict, Any
 from .utils import *
 
 # 根据环境变量设置日志级别
@@ -117,6 +117,9 @@ def apply_imports(file_path: str, imports: List[str], config: Dict[str, Any]) ->
         subprocess.run([sys.executable, '-m', 'pip', 'install', '-r', os.path.join(os.path.dirname(file_path), 'requirements.txt')])
         logger.info(f"已安装 requirements.txt 中的所有模块")
         imports = find_missing_imports(findall_imports(file_path))
+    
+
+    flag_installAllRequired = True
     
     for import_name in imports:
         if os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes', 'on'):
