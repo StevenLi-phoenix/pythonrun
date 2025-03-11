@@ -17,7 +17,7 @@ if os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes', 'on'):
 else:
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format='%(levelname)s - %(message)s'
     )
 logger = logging.getLogger('pythonrun')
 
@@ -37,6 +37,7 @@ CURRENT_FILE_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CONFIG = {
     'auto_install': False,    # 是否自动安装包
     'auto_update_pip': False, # 是否自动更新pip
+    'auto_read_requirements': False, # 是否自动读取requirements.txt
 }
 
 # 安全加载JSON文件
@@ -73,12 +74,21 @@ def first_run_setup() -> Dict[str, Any]:
     response = input("是否在检测到新版本时自动更新 pip？(y/n): ").strip().lower()
     config['auto_update_pip'] = response.lower() == 'y'
     
+    # 读取requirements.txt并自动安装
+    print("\nrequirements.txt 是 Python 的依赖管理文件，用于指定项目所需的包。")
+    response = input("是否读取requirements.txt并自动安装？(y/n):  ").strip().lower()
+    config['auto_read_requirements'] = response.lower() == 'y'
+    
     print("\n设置已保存。您可以随时通过修改配置文件来更改这些设置。")
     print(f"配置文件位置: {CONFIG_FILE}\n")
     
     save_config(config)
     
     return config
+
+def reset_config() -> None:
+    """重置配置"""
+    os.remove(CONFIG_FILE)
 
 def load_config() -> Dict[str, Any]:
     """加载配置文件"""

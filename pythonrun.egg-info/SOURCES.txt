@@ -19,6 +19,7 @@ pythonrun/utils.py
 tests/basic_import.py
 tests/basic_recurcive_import.py
 tests/local_test.py
+tests/simple_test.py
 tests/test_args.py
 tests/test_script.py
 tests/local_package/__init__.py

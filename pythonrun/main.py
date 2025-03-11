@@ -43,7 +43,9 @@ def findall_imports(file_path: str, max_depth: int = 10) -> List[str]:
     except SyntaxError as e:
         logger.error(f"解析文件 {file_path} 时出现语法错误: {e}")
         return []
-        
+    
+    logger.debug(f"-> 分析文件 {file_path}")
+    
     imports = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -102,6 +104,37 @@ def find_missing_imports(imports: List[str]) -> List[str]:
             missing_imports.append(import_name)
     return missing_imports
 
+def apply_imports(file_path: str, imports: List[str], config: Dict[str, Any]) -> bool:
+    if not imports:
+        return True
+    logger.info(f"缺失的模块: {imports}")
+    if config.get('auto_update_pip', False):
+        logger.info("正在更新pip")
+        subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip'])
+        update_stdlib_modules()
+    
+    if config.get('auto_read_requirements', False) and os.path.exists(os.path.join(os.path.dirname(file_path), 'requirements.txt')):
+        subprocess.run([sys.executable, '-m', 'pip', 'install', '-r', os.path.join(os.path.dirname(file_path), 'requirements.txt')])
+        logger.info(f"已安装 requirements.txt 中的所有模块")
+        imports = find_missing_imports(findall_imports(file_path))
+    
+    for import_name in imports:
+        if os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes', 'on'):
+            logger.debug(f"处理缺失模块: {import_name}")
+            
+        if config.get('auto_install', False) or input(f"是否安装 {import_name}? (y/n): ").lower() == 'y':
+            install_success = install_package(import_name)
+            flag_installAllRequired &= install_success
+            
+            if os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes', 'on'):
+                logger.debug(f"安装模块 {import_name} {'成功' if install_success else '失败'}")
+        else:
+            # User can't install all required packages, can't pythonrun the script
+            flag_installAllRequired = False
+    
+    return flag_installAllRequired
+    
+
 def main():
     """主函数"""
     # 加载配置
@@ -129,34 +162,17 @@ def main():
             logger.debug(f"配置信息: {config}")
             
         imports = find_missing_imports(findall_imports(file_path))
-        flag_installAllRequired = True
-        
-        if imports:
-            logger.info(f"缺失的模块: {imports}")
-            if config.get('auto_update_pip', False):
-                logger.info("正在更新pip")
-                subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip'])
-                update_stdlib_modules()
-                
-            for import_name in imports:
-                if os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes', 'on'):
-                    logger.debug(f"处理缺失模块: {import_name}")
-                    
-                if config.get('auto_install', False) or input(f"是否安装 {import_name}? (y/n): ").lower() == 'y':
-                    install_success = install_package(import_name)
-                    flag_installAllRequired &= install_success
-                    
-                    if os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes', 'on'):
-                        logger.debug(f"安装模块 {import_name} {'成功' if install_success else '失败'}")
-                else:
-                    # User can't install all required packages, can't pythonrun the script
-                    flag_installAllRequired = False
-        
-        if flag_installAllRequired:
+
+        if apply_imports(file_path, imports, config):
             # run in detached mode, forward all arguments and cwd
             if os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes', 'on'):
                 logger.debug(f"正在替换当前进程，运行 {file_path} {sys.argv[2:]}")
             os.execv(sys.executable, [sys.executable, file_path] + sys.argv[2:])
+            # after execv, the current process will be replaced by the new process
+            # so we need to exit the current process
+            # in case of the new process failed, the current process will still run
+            logger.critical("execv failed, 无法替换当前进程")
+            sys.exit(1)
         else:
             logger.warning("无法安装所有缺失的模块，无法运行脚本")
     except Exception as e:

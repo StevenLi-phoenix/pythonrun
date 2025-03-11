@@ -1,6 +1,6 @@
 Metadata-Version: 2.2
 Name: pythonrun
-Version: 1.0.0
+Version: 1.0.2.dev0
 Summary: 自动导入和安装Python模块的工具
 Author-email: StevenLi-phoenix <example@example.com>
 License: MIT

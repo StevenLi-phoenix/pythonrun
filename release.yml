@@ -47,4 +47,4 @@ jobs:
           dist/*.whl
           dist/*.tar.gz
         generate_release_notes: true
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.GITHUB_TOKEN }}  # 使用 token 参数而不是环境变量 
