@@ -1,3 +1,41 @@
+Metadata-Version: 2.2
+Name: pythonrun
+Version: 0.1.1
+Summary: 自动导入和安装Python模块的工具
+Home-page: https://github.com/StevenLi-phoenix/pythonrun
+Author: StevenLi-phoenix
+Author-email: example@example.com
+Project-URL: Bug Reports, https://github.com/StevenLi-phoenix/pythonrun/issues
+Project-URL: Source, https://github.com/StevenLi-phoenix/pythonrun
+Keywords: import,package management,dependency,automation
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Development Status :: 4 - Beta
+Classifier: Environment :: Console
+Classifier: Intended Audience :: Developers
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: requests>=2.25.0
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: keywords
+Dynamic: project-url
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
 # autopython
 
 自动导入和安装Python模块的工具

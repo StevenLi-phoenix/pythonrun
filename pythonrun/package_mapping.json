@@ -1,0 +1,10 @@
+{
+    "PIL": "pillow",
+    "cv2": "opencv-python",
+    "sklearn": "scikit-learn",
+    "bs4": "beautifulsoup4",
+    "yaml": "pyyaml",
+    "Image": "pillow",
+    "tkinter": null,
+    "torch": "torch torchvision torchaudio"
+}

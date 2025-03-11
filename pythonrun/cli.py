@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-autopython CLI 入口
+pythonrun CLI 入口
 """
 
 from .main import main
