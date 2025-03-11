@@ -2,6 +2,7 @@ LICENSE
 MANIFEST.in
 README.md
 pyproject.toml
+release.yml
 requirements-dev.txt
 setup.py
 test_entry.py
@@ -19,6 +20,7 @@ pythonrun/utils.py
 tests/basic_import.py
 tests/basic_recurcive_import.py
 tests/local_test.py
+tests/requirements.txt
 tests/simple_test.py
 tests/test_args.py
 tests/test_script.py
