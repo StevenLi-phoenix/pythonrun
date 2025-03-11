@@ -7,7 +7,7 @@ import os
 import pytest
 import subprocess
 import sys
-from pythonrun import main
+from pythonrun.main import findall_imports, find_missing_imports, check_local_py, STDLIB_MODULES
 
 
 @pytest.fixture
@@ -33,26 +33,26 @@ def numpy_environment():
 
 def test_basic_import():
     """测试basic_import.py"""
-    assert main.findall_imports('./tests/basic_import.py') == ['numpy'], \
+    assert findall_imports('./tests/basic_import.py') == ['numpy'], \
         "basic_import.py 应该导入 numpy"
 
 
 def test_basic_recursive_import():
     """测试basic_recursive_import.py"""
-    assert main.findall_imports('./tests/basic_recurcive_import.py') == ['numpy'], \
+    assert findall_imports('./tests/basic_recurcive_import.py') == ['numpy'], \
         "basic_recurcive_import.py 应该导入 numpy"
 
 
 def test_local_test():
     """测试local_test.py"""
-    assert main.findall_imports('./tests/local_test.py') == [], \
+    assert findall_imports('./tests/local_test.py') == [], \
         "local_test.py 不应该导入任何模块"
 
 
 def test_missing_import(numpy_environment):
     """测试缺失模块的检测"""
     # 确保numpy未安装
-    assert main.find_missing_imports(["numpy", "sys"]) == ['numpy'], \
+    assert find_missing_imports(["numpy", "sys"]) == ['numpy'], \
         "应该检测到numpy缺失"
     
     # 安装numpy
@@ -60,7 +60,7 @@ def test_missing_import(numpy_environment):
                   capture_output=True)
     
     # 确认numpy已安装
-    assert main.find_missing_imports(["numpy", "sys"]) == [], \
+    assert find_missing_imports(["numpy", "sys"]) == [], \
         "安装后不应该检测到numpy缺失"
 
 
@@ -71,7 +71,7 @@ def test_missing_import(numpy_environment):
 ])
 def test_stdlib_modules(module_name, expected):
     """测试标准库模块检测"""
-    assert (module_name in main.STDLIB_MODULES) == expected
+    assert (module_name in STDLIB_MODULES) == expected
 
 
 def test_check_local_py():
@@ -85,8 +85,8 @@ def test_check_local_py():
         f.write("# Test file")
     
     try:
-        assert main.check_local_py(test_dir, "local_module") == True
-        assert main.check_local_py(test_dir, "nonexistent_module") == False
+        assert check_local_py(test_dir, "local_module") == True
+        assert check_local_py(test_dir, "nonexistent_module") == False
     finally:
         # 清理
         if os.path.exists(test_file):

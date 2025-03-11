@@ -15,7 +15,7 @@ is_pypi_upload = any(arg.startswith('upload') or arg.startswith('bdist') or arg.
 if is_pypi_upload:
     # 上传到PyPI时使用固定版本号
     setup(
-        version="1.0.0",  # 与pyproject.toml中的版本保持一致
+        version="1.0.1",  # 与pyproject.toml中的版本保持一致
     )
 else:
     # 开发环境使用setuptools_scm

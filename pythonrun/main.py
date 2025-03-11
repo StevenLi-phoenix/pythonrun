@@ -13,7 +13,14 @@ import logging
 from typing import List
 from .utils import *
 
-logger = logging.getLogger('autopython')
+# 根据环境变量设置日志级别
+if os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes', 'on'):
+    logging.basicConfig(level=logging.DEBUG)
+    logger = logging.getLogger('autopython')
+    logger.setLevel(logging.DEBUG)
+    logger.debug("调试模式已启用")
+else:
+    logger = logging.getLogger('autopython')
 
 
 def findall_imports(file_path: str, max_depth: int = 10) -> List[str]:
@@ -104,7 +111,7 @@ def main():
     config = load_config()
     
     if len(sys.argv) < 2:
-        logging.info("用法: autopython <python_file> [args...]")
+        logging.info("用法: pythonrun <python_file> [args...]")
         sys.exit(1)
     
     file_path = sys.argv[1]
@@ -116,29 +123,47 @@ def main():
         logger.warning(f"文件 {file_path} 不是Python文件")
     
     try:
+        # 在调试模式下输出更多信息
+        if os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes', 'on'):
+            logger.debug(f"正在分析文件: {file_path}")
+            logger.debug(f"配置信息: {config}")
+            
         imports = find_missing_imports(findall_imports(file_path))
         flag_installAllRequired = True
+        
         if imports:
-            logging.info(f"缺失的模块: {imports}")
+            logger.info(f"缺失的模块: {imports}")
             if config.get('auto_update_pip', False):
                 logger.info("正在更新pip")
                 subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip'])
                 update_stdlib_modules()
+                
             for import_name in imports:
+                if os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes', 'on'):
+                    logger.debug(f"处理缺失模块: {import_name}")
+                    
                 if config.get('auto_install', False) or input(f"是否安装 {import_name}? (y/n): ").lower() == 'y':
-                    flag_installAllRequired &= install_package(import_name)
+                    install_success = install_package(import_name)
+                    flag_installAllRequired &= install_success
+                    
+                    if os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes', 'on'):
+                        logger.debug(f"安装模块 {import_name} {'成功' if install_success else '失败'}")
                 else:
                     # User can't install all required packages, can't pythonrun the script
                     flag_installAllRequired = False
         
         if flag_installAllRequired:
             # run in detached mode, forward all arguments and cwd
-            logger.debug(f"正在替换当前进程，运行 {file_path} {sys.argv[2:]}")
+            if os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes', 'on'):
+                logger.debug(f"正在替换当前进程，运行 {file_path} {sys.argv[2:]}")
             os.execv(sys.executable, [sys.executable, file_path] + sys.argv[2:])
         else:
             logger.warning("无法安装所有缺失的模块，无法运行脚本")
     except Exception as e:
         logger.error(f"运行时出错: {e}")
+        if os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes', 'on'):
+            import traceback
+            logger.debug(f"错误详情:\n{traceback.format_exc()}")
         sys.exit(1)
 
 

@@ -9,10 +9,16 @@ import time
 import re
 
 # 配置日志
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+if os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes', 'on'):
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+else:
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
 logger = logging.getLogger('pythonrun')
 
 # 配置文件路径
@@ -80,7 +86,10 @@ def load_config() -> Dict[str, Any]:
         return DEFAULT_CONFIG.copy()
     try:
         with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            config = json.load(f)
+            if os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes', 'on'):
+                logger.debug(f"已加载配置: {config}")
+            return config
     except (json.JSONDecodeError, PermissionError, FileNotFoundError) as e:
         logger.error(f"无法加载配置文件: {e}")
         return DEFAULT_CONFIG.copy()
@@ -91,6 +100,8 @@ def save_config(config: Dict[str, Any]) -> None:
         os.makedirs(CONFIG_DIR, exist_ok=True)
         with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
             json.dump(config, f, indent=4)
+        if os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes', 'on'):
+            logger.debug(f"已保存配置: {config}")
     except (PermissionError, FileNotFoundError) as e:
         logger.error(f"无法保存配置文件: {e}")
 
@@ -112,6 +123,8 @@ def search_package(package_name: str, max_depth: int = 1) -> Optional[Dict]:
         try:
             import requests
             # 设置超时，避免长时间等待
+            if os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes', 'on'):
+                logger.debug(f"正在请求 PyPI API: {package_name}")
             response = requests.get(f"https://pypi.org/pypi/{package_name}/json", timeout=10)
             if response.status_code == 200:
                 return response.json()
@@ -120,6 +133,7 @@ def search_package(package_name: str, max_depth: int = 1) -> Optional[Dict]:
                 return None
         except ImportError:
             # 安装requests后重试，但减少递归深度
+            logger.info("正在安装requests模块...")
             install_package('requests')
             return search_package(package_name, max_depth - 1)
         except requests.exceptions.RequestException as e:
@@ -159,14 +173,20 @@ def install_package(package_name: str) -> bool:
         
     try:
         # 使用subprocess安装包，设置超时
+        if os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes', 'on'):
+            logger.debug(f"正在执行: pip install {package_name}")
+            
         process = subprocess.run(
             [sys.executable, '-m', 'pip', 'install', package_name],
             timeout=300,  # 5分钟超时
-            check=False
+            check=False,
+            capture_output=os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes', 'on')
         )
         
         if process.returncode != 0:
             logger.error(f"安装 {package_name} 失败，返回码: {process.returncode}")
+            if os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes', 'on') and hasattr(process, 'stderr'):
+                logger.debug(f"错误输出: {process.stderr.decode('utf-8', errors='replace')}")
             # 尝试搜索包信息，但不递归调用install_package
             search_package(package_name)
             return False
@@ -197,6 +217,9 @@ def update_stdlib_modules(expire_time_day=30) -> None:
         try:
             import requests
             # 设置超时，避免长时间等待
+            if os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes', 'on'):
+                logger.debug("正在请求Python文档...")
+                
             response = requests.get('https://docs.python.org/3/py-modindex.html', timeout=10)
             if response.status_code != 200:
                 logger.warning(f"获取标准库模块列表失败，状态码: {response.status_code}")
@@ -218,6 +241,8 @@ def update_stdlib_modules(expire_time_day=30) -> None:
                 # 更新全局变量
                 global STDLIB_MODULES
                 STDLIB_MODULES = updated_modules
+                if os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes', 'on'):
+                    logger.debug(f"已更新标准库模块，共 {len(updated_modules)} 个")
             except (PermissionError, FileNotFoundError) as e:
                 logger.error(f"无法写入标准库模块文件: {e}")
                 

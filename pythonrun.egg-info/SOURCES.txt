@@ -4,10 +4,17 @@ README.md
 pyproject.toml
 requirements-dev.txt
 setup.py
+test_entry.py
+.cursor/rules/release-rules.mdc
+.github/workflows/release.yml
+dist/pythonrun-1.0.0-py3-none-any.whl
+dist/pythonrun-1.0.0.tar.gz
 pythonrun/__init__.py
 pythonrun/_version.py
 pythonrun/cli.py
 pythonrun/main.py
+pythonrun/package_mapping.json
+pythonrun/stdlib_modules.json
 pythonrun/utils.py
 tests/basic_import.py
 tests/basic_recurcive_import.py
