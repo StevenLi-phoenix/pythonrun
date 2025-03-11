@@ -1,0 +1,16 @@
+---
+description: 版本发布流程
+globs: 
+alwaysApply: false
+---
+## 版本发布流程
+
+1. 更新代码并完成测试
+2. 更新 [pyproject.toml](mdc:pyproject.toml) 和 [setup.py](mdc:setup.py) 中的版本号，确保两者一致
+3. 提交更改并推送到 GitHub
+4. 创建新的版本标签（例如 `v1.0.1`）并推送到 GitHub
+   ```bash
+   git tag v1.0.1
+   git push origin v1.0.1
+   ```
+5. GitHub Actions 将自动触发构建、发布到 PyPI 和创建 GitHub Release
