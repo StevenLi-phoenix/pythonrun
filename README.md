@@ -1,6 +1,6 @@
-# pythonrun (autopython)
+# pythonrun
 
-自动导入和安装Python模块的工具，让你的Python脚本运行更加顺畅。
+自动导入和安装Python模块的工具
 
 [![PyPI version](https://badge.fury.io/py/pythonrun.svg)](https://badge.fury.io/py/pythonrun)
 [![Python Versions](https://img.shields.io/pypi/pyversions/pythonrun.svg)](https://pypi.org/project/pythonrun/)
@@ -12,9 +12,8 @@
 - 自动安装缺少的依赖包
 - 智能处理本地模块和标准库
 - 支持递归检测导入
-- 处理 `if __name__ == "__main__"` 的情况
 - 支持命令行参数传递
-- 安装失败时搜索相关包并提供安装建议
+- 自动纠正部分包名（如将 `PIL` 纠正为 `Pillow`, `torch` 纠正为 `torch torchvision torchaudio`-这三个包需要一起安装，根据官网安装提示）
 
 ## 安装
 
@@ -35,13 +34,12 @@ pip install -e .
 ## 使用方法
 
 ```bash
-autopython your_script.py [arg1 arg2 ...]
+pythonrun your_script.py [arg1 arg2 ...]
 ```
 
 ### 配置选项
 
-你可以通过配置文件自定义autopython的行为：
-
+你可以通过配置文件自定义pythonrun的行为，默认配置文件为 `~/.config/pythonrun/config.json`：
 - `auto_install_all`: 自动安装所有缺失的依赖，无需确认
 - `auto_update_pip`: 在安装依赖前自动更新pip
 
@@ -59,10 +57,10 @@ plt.title('Random Data')
 plt.show()
 ```
 
-如果你的系统没有安装numpy或matplotlib，使用autopython会自动安装它们：
+如果你的系统没有安装numpy或matplotlib，使用pythonrun会自动安装它们：
 
 ```bash
-autopython example.py
+pythonrun example.py
 ```
 
 输出：
@@ -73,32 +71,13 @@ autopython example.py
 正在安装 numpy...
 是否安装 matplotlib? (y/n): y
 正在安装 matplotlib...
+<运行你的python脚本>
 [图表显示]
 ```
 
-### 处理安装失败的情况
-
-如果安装失败，autopython会搜索相关包并提供安装建议：
-
-```
-正在安装缺失的依赖包: some-package
-安装包 some-package 失败！
-
-正在搜索与 some-package 相关的包...
-找到以下相关包，您可以尝试手动安装：
-  - some-package-lib (版本: 1.2.3) - 实用的Python包
-  - another-package
-
-安装命令: python -m pip install some-package
-
-是否继续执行代码?(y/n): 
-```
-
-## 高级功能
-
 ### 本地模块检测
 
-autopython能够智能识别本地模块，避免尝试从PyPI安装它们：
+pythonrun能够智能识别本地模块，避免尝试从PyPI安装它们：
 
 ```python
 # local_module.py
@@ -110,11 +89,11 @@ import local_module
 local_module.hello()
 ```
 
-运行 `autopython main.py` 不会尝试安装 local_module。
+运行 `pythonrun main.py` 不会尝试安装 local_module。
 
 ### 递归导入检测
 
-autopython会递归检测导入的模块，确保所有依赖都被正确安装：
+pythonrun会递归检测导入的模块，确保所有依赖都被正确安装：
 
 ```python
 # module_a.py
@@ -124,7 +103,7 @@ import numpy
 import module_a
 ```
 
-运行 `autopython main.py` 会检测到 numpy 的依赖并安装它。
+运行 `pythonrun main.py` 会检测到 numpy 的依赖并安装它。
 
 ## 开发者指南
 

@@ -11,7 +11,7 @@ import importlib
 import subprocess
 import logging
 from typing import List
-from .utils import load_config, save_config, STDLIB_MODULES, install_package, search_package, update_stdlib_modules
+from .utils import *
 
 logger = logging.getLogger('autopython')
 
@@ -70,10 +70,13 @@ def find_missing_imports(imports: List[str]) -> List[str]:
 def main():
     """主函数"""
     # 加载配置
+    if not os.path.exists(CONFIG_FILE):
+        first_run_setup()
+
     config = load_config()
     
     if len(sys.argv) < 2:
-        print("用法: autopython <python_file> [args...]")
+        logging.info("用法: autopython <python_file> [args...]")
         sys.exit(1)
     
     file_path = sys.argv[1]
@@ -83,12 +86,13 @@ def main():
     imports = find_missing_imports(findall_imports(file_path))
     flag_installAllRequired = True
     if imports:
-        print(f"缺失的模块: {imports}")
+        logging.info(f"缺失的模块: {imports}")
         if config.get('auto_update_pip', False):
+            logger.info("正在更新pip")
             subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip'])
             update_stdlib_modules()
         for import_name in imports:
-            if config.get('auto_install_all', False) or input(f"是否安装 {import_name}? (y/n): ") == 'y':
+            if config.get('auto_install', False) or input(f"是否安装 {import_name}? (y/n): ") == 'y':
                 flag_installAllRequired &= install_package(import_name)
             else:
                 # User can't install all required packages, can't pythonrun the script
@@ -96,32 +100,11 @@ def main():
     
     if flag_installAllRequired:
         # run in detached mode, forward all arguments and cwd
-        subprocess.Popen(
-            [sys.executable, file_path] + sys.argv[2:], 
-            cwd=os.getcwd(), 
-            start_new_session=True,
-            creationflags=subprocess.DETACHED_PROCESS if os.name == 'nt' else 0  # Windows特有的标志
-        )
+        logger.debug(f"正在替换当前进程，运行 {file_path} {sys.argv[2:]}")
+        os.execv(sys.executable, [sys.executable, file_path] + sys.argv[2:])
     else:
         logger.warning("无法安装所有缺失的模块，无法运行脚本")
 
-    
-def test():
-    """测试"""
-    if_installed_numpy = subprocess.run([sys.executable, '-m', 'pip', 'uninstall', 'numpy', '-y'], capture_output=True) # 卸载numpy(如果存在)
-    if if_installed_numpy.returncode == 0 and "installed" in if_installed_numpy.stderr.decode('utf-8'):
-        if_installed_numpy = False
-    else:
-        if_installed_numpy = True
-    assert findall_imports('./tests/basic_import.py') == ['numpy'], "basic_import.py 应该导入 numpy"
-    assert findall_imports('./tests/basic_recurcive_import.py') == ['numpy'], "basic_recurcive_import.py 应该导入 numpy"
-    assert findall_imports('./tests/local_test.py') == [], "local_test.py 不应该导入任何模块"
-    assert find_missing_imports(findall_imports('./tests/basic_recurcive_import.py')) == ['numpy'], "basic_recurcive_import.py 应该缺失 numpy"
-    if if_installed_numpy:
-        subprocess.run([sys.executable, '-m', 'pip', 'install', 'numpy']) # 恢复numpy环境
-    logger.info("所有测试通过")
-    return True
-    
+
 if __name__ == "__main__":
-    # main() 
-    test()
+    main()

@@ -6,5 +6,15 @@
     "yaml": "pyyaml",
     "Image": "pillow",
     "tkinter": null,
-    "torch": "torch torchvision torchaudio"
+    "torch": "torch torchvision torchaudio",
+    "crypto": "pycryptodome",
+    "google": "protobuf",
+    "dateutil": "python-dateutil",
+    "win32com": "pywin32",
+    "win32api": "pywin32",
+    "OpenGL": "PyOpenGL",
+    "mpl_toolkits": "matplotlib",
+    "flask_sqlalchemy": "Flask-SQLAlchemy",
+    "flask_login": "Flask-Login",
+    "psycopg2": "psycopg2-binary"
 }

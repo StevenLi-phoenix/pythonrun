@@ -3,8 +3,6 @@ include README.md
 include pyproject.toml
 include setup.py
 include requirements*.txt
-include tox.ini
-include .coveragerc
 
 recursive-include tests *.py
 recursive-include docs *.md *.rst *.txt *.py

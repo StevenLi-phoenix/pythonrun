@@ -37,7 +37,7 @@ dependencies = [
 "Source" = "https://github.com/StevenLi-phoenix/pythonrun"
 
 [project.scripts]
-autopython = "pythonrun.main:main"
+pythonrun = "pythonrun.main:main"
 
 [tool.setuptools_scm]
 write_to = "pythonrun/_version.py"

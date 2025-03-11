@@ -5,16 +5,22 @@ import logging
 import os
 from pathlib import Path
 import json
+import time
 
 # 配置日志
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
-logger = logging.getLogger('autopython')
+logger = logging.getLogger('pythonrun')
 
 # 配置文件路径
-CONFIG_DIR = os.path.join(str(Path.home()), '.autopython')
+if os.name != 'nt':
+    # for linux and macos
+    CONFIG_DIR = os.path.join(str(Path.home()), '.config', 'pythonrun')
+else:
+    # for windows
+    CONFIG_DIR = os.path.join(str(Path.home()), 'AppData', 'Local', 'pythonrun')
 CONFIG_FILE = os.path.join(CONFIG_DIR, 'config.json')
 
 # 当前文件路径
@@ -25,6 +31,7 @@ DEFAULT_CONFIG = {
     'auto_install': False,    # 是否自动安装包
     'auto_update_pip': False, # 是否自动更新pip
 }
+
 if os.path.exists(os.path.join(CURRENT_FILE_DIRECTORY, 'stdlib_modules.json')):
     STDLIB_MODULES = json.load(open(os.path.join(CURRENT_FILE_DIRECTORY, 'stdlib_modules.json'), 'r', encoding='utf-8'))
 else:
@@ -37,25 +44,25 @@ else:
 
 def first_run_setup() -> Dict[str, Any]:
     """首次运行的设置向导"""
-    if os.path.exists(CONFIG_FILE):
-        return load_config()
-    
+    os.makedirs(CONFIG_DIR, exist_ok=True)
     config = DEFAULT_CONFIG.copy()
-    print("\n欢迎使用 AutoPython！")
+    print("\n欢迎使用 PythonRun！")
     print("这是首次运行，请进行一些简单的设置。\n")
     
     # 询问是否自动安装包
-    print("AutoPython 可以在运行脚本时自动安装缺少的包。")
+    print("PythonRun 可以在运行脚本时自动安装缺少的包。")
     response = input("是否默认自动安装缺少的包？(y/n): ").strip().lower()
-    config['auto_install'] = response == 'y'
+    config['auto_install'] = response.lower() == 'y'
     
     # 询问是否自动更新pip
     print("\nPip 是 Python 的包管理器，保持最新版本有助于避免安装问题。")
     response = input("是否在检测到新版本时自动更新 pip？(y/n): ").strip().lower()
-    config['auto_update_pip'] = response == 'y'
+    config['auto_update_pip'] = response.lower() == 'y'
     
     print("\n设置已保存。您可以随时通过修改配置文件来更改这些设置。")
     print(f"配置文件位置: {CONFIG_FILE}\n")
+    
+    save_config(config)
     
     return config
 
@@ -68,6 +75,7 @@ def load_config() -> Dict[str, Any]:
 
 def save_config(config: Dict[str, Any]) -> None:
     """保存配置到文件"""
+    os.makedirs(CONFIG_DIR, exist_ok=True)
     with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
         json.dump(config, f, indent=4)
 
@@ -91,11 +99,14 @@ def install_package(package_name: str) -> bool:
     logger.info(f"Installing package {package_name}")
     if not package_name:
         raise ValueError("No package name provided")
-    if package_name in STDLIB_MODULES:
-        raise ValueError(f"Package {package_name} is a standard library module and cannot be installed")
     if package_name in PACKAGE_MAPPING:
         logging.info(f"将 {package_name} 映射为 {PACKAGE_MAPPING[package_name]}")
         package_name = PACKAGE_MAPPING[package_name]
+        if package_name is None:
+            logger.warning(f"Package {package_name} is mapped to None in package_mapping.json")
+            return False
+    if package_name in STDLIB_MODULES:
+        raise ValueError(f"Package {package_name} is a standard library module and cannot be installed")
     try:
         output = subprocess.run([sys.executable, '-m', 'pip', 'install', package_name])
         if output.returncode != 0:
@@ -104,13 +115,20 @@ def install_package(package_name: str) -> bool:
     except subprocess.CalledProcessError:
         logger.error(f"安装 {package_name} 失败")
         search_package(package_name)
-        
         return False
     
     
-def update_stdlib_modules() -> None:
-    """更新标准库模块"""
-    logger.info("Updating standard library modules (from https://docs.python.org/3/py-modindex.html)")
+def update_stdlib_modules(expire_time_day=30) -> None:
+    """
+    更新标准库模块
+    expire_time_day: 更新时间，单位为天，默认30天
+    """
+    if os.path.exists(os.path.join(CURRENT_FILE_DIRECTORY, 'stdlib_modules.json')):
+        last_update_time = os.path.getmtime(os.path.join(CURRENT_FILE_DIRECTORY, 'stdlib_modules.json'))
+        if time.time() - last_update_time < expire_time_day * 24 * 60 * 60:
+            logger.debug(f"标准库模块已在{expire_time_day}天内更新")
+            return
+    logger.debug("Updating standard library modules (from https://docs.python.org/3/py-modindex.html)")
     try:
         import requests
         response = requests.get('https://docs.python.org/3/py-modindex.html')
@@ -128,6 +146,8 @@ def update_stdlib_modules() -> None:
     except Exception as e:
         logger.error(f"Failed to update standard library modules: {e}")
         
-update_stdlib_modules()
+        
+if __name__ == "__main__":
+    update_stdlib_modules()
                 
                 

@@ -1,2 +1,2 @@
 [console_scripts]
-autopython = pythonrun.main:main
+pythonrun = pythonrun.main:main
