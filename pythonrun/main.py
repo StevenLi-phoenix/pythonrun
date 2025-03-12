@@ -100,6 +100,8 @@ def find_missing_imports(imports: List[str]) -> List[str]:
     """查找缺失的模块"""
     missing_imports = []
     for import_name in imports:
+        if import_name in STDLIB_MODULES:
+            continue
         if importlib.util.find_spec(import_name) is None:
             missing_imports.append(import_name)
     return missing_imports
