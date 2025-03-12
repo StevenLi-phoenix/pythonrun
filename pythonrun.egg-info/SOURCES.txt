@@ -2,11 +2,10 @@ LICENSE
 MANIFEST.in
 README.md
 pyproject.toml
-release.yml
 requirements-dev.txt
 setup.py
-test_entry.py
 .cursor/rules/release-rules.mdc
+.github/workflows/pytest.yml
 .github/workflows/release.yml
 dist/pythonrun-1.0.0-py3-none-any.whl
 dist/pythonrun-1.0.0.tar.gz
@@ -19,10 +18,11 @@ pythonrun/stdlib_modules.json
 pythonrun/utils.py
 tests/basic_import.py
 tests/basic_recurcive_import.py
+tests/check_args.py
 tests/local_test.py
 tests/requirements.txt
 tests/simple_test.py
-tests/test_args.py
-tests/test_script.py
+tests/test_entry.py
+tests/use_script.py
 tests/local_package/__init__.py
 tests/local_package/pi.py

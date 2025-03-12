@@ -51,12 +51,12 @@ def findall_imports(file_path: str, max_depth: int = 10) -> List[str]:
         if isinstance(node, ast.Import):
             for name in node.names:
                 if name.name not in STDLIB_MODULES:
-                    imports.append(name.name)
+                    imports.append(name.name.split(".")[0])
         elif isinstance(node, ast.ImportFrom):
             module = node.module if node.module else ''
             for name in node.names:
                 if name.name not in STDLIB_MODULES:
-                    imports.append(f"{module}.{name.name}")
+                    imports.append(module.split(".")[0])
     
     imports = list(set(imports)) # Deduplicate
     result_imports = imports.copy()  # 创建副本，避免在迭代时修改列表
@@ -102,6 +102,7 @@ def find_missing_imports(imports: List[str]) -> List[str]:
     for import_name in imports:
         if import_name in STDLIB_MODULES:
             continue
+        print(import_name)
         if importlib.util.find_spec(import_name) is None:
             missing_imports.append(import_name)
     return missing_imports
