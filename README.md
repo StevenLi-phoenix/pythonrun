@@ -5,6 +5,7 @@
 [![PyPI version](https://badge.fury.io/py/pythonrun.svg)](https://badge.fury.io/py/pythonrun)
 [![Python Versions](https://img.shields.io/pypi/pyversions/pythonrun.svg)](https://pypi.org/project/pythonrun/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![self testing](https://github.com/StevenLi-phoenix/pythonrun/actions/workflows/pytest.yml/badge.svg)](https://github.com/StevenLi-phoenix/pythonrun/actions/workflows/pytest.yml)
 
 ## 功能特点
 
